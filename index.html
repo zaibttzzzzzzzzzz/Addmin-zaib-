@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pak Earn PKR</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --green: #2ecc71; }
+        .hidden { display: none!important; }
+        .admin-panel { background: #f8f9fa; border-radius: 15px; box-shadow: 0 0 20px #0001; }
+    </style>
+</head>
+<body class="bg-light">
+
+<!-- Main Auth Section -->
+<div id="authSection" class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">💰 Pak Earn PKR</h3>
+                    <div id="loginForm">
+                        <input type="email" class="form-control mb-3" placeholder="Email" id="loginEmail">
+                        <input type="password" class="form-control mb-3" placeholder="Password" id="loginPassword">
+                        <button class="btn btn-success w-100" onclick="loginUser()">Login</button>
+                        <p class="text-center mt-3">
+                            New User? <a href="#" class="text-success" onclick="showRegister()">Create Account</a>
+                        </p>
+                    </div>
+                    <div id="registerForm" class="hidden">
+                        <input type="email" class="form-control mb-3" placeholder="Email" id="regEmail">
+                        <input type="password" class="form-control mb-3" placeholder="Password" id="regPassword">
+                        <input type="password" class="form-control mb-3" placeholder="Confirm Password" id="regConfirmPassword">
+                        <button class="btn btn-success w-100" onclick="registerUser()">Register</button>
+                        <p class="text-center mt-3">
+                            Existing User? <a href="#" class="text-success" onclick="showLogin()">Login Here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Panel (Initially Hidden) -->
+<div id="adminAccess" class="container mt-5 hidden">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="admin-panel p-4">
+                <h3 class="text-center mb-4">🔐 Admin Login</h3>
+                <input type="password" id="adminPassword" class="form-control mb-3" placeholder="Admin Password">
+                <button class="btn btn-success w-100" onclick="verifyAdmin()">Access Panel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Admin Panel -->
+<div id="mainAdminPanel" class="container mt-3 hidden">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">👑 Admin Dashboard</h3>
+                    
+                    <!-- User Management -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Balance</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userList">
+                                <!-- Users will load here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Task Management -->
+                    <div class="mt-4">
+                        <h4>📌 Manage Tasks</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <input type="text" id="taskTitle" class="form-control mb-2" placeholder="Task Title">
+                                    <input type="url" id="taskURL" class="form-control mb-2" placeholder="Task URL">
+                                    <input type="number" id="taskReward" class="form-control mb-2" placeholder="Reward (PKR)">
+                                    <button class="btn btn-success w-100" onclick="addTask()">Add Task</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-group" id="taskList">
+                                    <!-- Tasks will load here -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Database
+let users = JSON.parse(localStorage.getItem('pakEarnUsers')) || [];
+let tasks = JSON.parse(localStorage.getItem('pakEarnTasks')) || [];
+const ADMIN_PASSWORD = "zaib331099"; // Your Admin Password
+
+// Auth Functions
+function showRegister() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.remove('hidden');
+}
+
+function showLogin() {
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+}
+
+function registerUser() {
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const confirmPass = document.getElementById('regConfirmPassword').value;
+
+    if(password !== confirmPass) {
+        alert("Passwords don't match!");
+        return;
+    }
+
+    if(users.some(u => u.email === email)) {
+        alert("Email already registered!");
+        return;
+    }
+
+    users.push({
+        email,
+        password,
+        balance: 0,
+        withdrawn: 0,
+        blocked: false
+    });
+    localStorage.setItem('pakEarnUsers', JSON.stringify(users));
+    alert("Registration successful!");
+    showLogin();
+}
+
+function loginUser() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const user = users.find(u => u.email === email && u.password === password);
+
+    if(!user) {
+        alert("Invalid credentials!");
+        return;
+    }
+
+    if(user.blocked) {
+        alert("Your account is blocked!");
+        return;
+    }
+
+    // For Admin Access
+    if(email === "admin@pakearn.pk") { // Set your admin email
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('adminAccess').classList.remove('hidden');
+    } else {
+        // Redirect to user dashboard
+        window.location.href = "user_dashboard.html";
+    }
+}
+
+// Admin Functions
+function verifyAdmin() {
+    const enteredPass = document.getElementById('adminPassword').value;
+    if(enteredPass === ADMIN_PASSWORD) {
+        document.getElementById('adminAccess').classList.add('hidden');
+        document.getElementById('mainAdminPanel').classList.remove('hidden');
+        loadAdminData();
+    } else {
+        alert("Wrong password!");
+    }
+}
+
+function loadAdminData() {
+    // Load Users
+    document.getElementById('userList').innerHTML = users.map(user => `
+        <tr>
+            <td>${user.email}</td>
+            <td>${user.balance} PKR</td>
+            <td>${user.blocked ? '<span class="badge bg-danger">Blocked</span>' : '<span class="badge bg-success">Active</span>'}</td>
+            <td>
+                <button class="btn ${user.blocked ? 'btn-success' : 'btn-danger'}" 
+                    onclick="toggleBlock('${user.email}')">
+                    ${user.blocked ? 'Unblock' : 'Block'}
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    // Load Tasks
+    document.getElementById('taskList').innerHTML = tasks.map((task, index) => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            ${task.title} (${task.reward} PKR)
+            <button class="btn btn-danger btn-sm" onclick="deleteTask(${index})">Delete</button>
+        </li>
+    `).join('');
+}
+
+function toggleBlock(email) {
+    const user = users.find(u => u.email === email);
+    user.blocked = !user.blocked;
+    localStorage.setItem('pakEarnUsers', JSON.stringify(users));
+    loadAdminData();
+}
+
+function addTask() {
+    const title = document.getElementById('taskTitle').value;
+    const url = document.getElementById('taskURL').value;
+    const reward = document.getElementById('taskReward').value;
+
+    tasks.push({ title, url, reward: parseInt(reward) });
+    localStorage.setItem('pakEarnTasks', JSON.stringify(tasks));
+    loadAdminData();
+    alert("Task added!");
+}
+
+function deleteTask(index) {
+    tasks.splice(index, 1);
+    localStorage.setItem('pakEarnTasks', JSON.stringify(tasks));
+    loadAdminData();
+}
+</script>
+
+</body>
+</html>
